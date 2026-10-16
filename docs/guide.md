@@ -91,22 +91,41 @@ func (s Shop) Checkout(user, item string, cents int64) Receipt {
 }
 ```
 
-A handler is a function that makes one capability:
+A handler is a function that makes one capability. **Components on
+components:** a handler's answer may perform through capabilities from outside
+it. The inventory is a statement against a database, itself an effect:
 
 ```go
-func Stock[A any](r *okay.Run, items map[string]int, body func(Inventory) A) A {
+const ReserveSQL = "update stock set qty = qty - 1 where sku = ? and qty > 0"
+
+func Stock[A any](r *okay.Run, db Db, body func(Inventory) A) A {
 	return okay.Answer(r, func(op Reserve) bool {
-		if items[op.Item] > 0 {
-			items[op.Item]--
-			return true
-		}
-		return false
+		return db.Exec(ReserveSQL, op.Item) == 1 // a row updated: one was there, now it is ours
 	}, func(c okay.Cap[Reserve]) A { return body(Inventory{c}) })
 }
 ```
 
-**Components on components.** A handler's answer may perform through
-capabilities from outside it — payments over HTTP:
+`Db` is answered by `Sql` over `database/sql` in production — a failed
+statement raised where it was performed (`okay.Raise`) — and by `Table`, the
+stock table in memory, in tests:
+
+```go
+func Sql[A any](r *okay.Run, db *sql.DB, body func(Db) A) A {
+	return okay.Handle(r, func(op Exec) any {
+		res, err := db.Exec(op.SQL, op.Args...)
+		if err != nil {
+			return okay.Raise(err)
+		}
+		n, err := res.RowsAffected()
+		if err != nil {
+			return okay.Raise(err)
+		}
+		return n
+	}, func(c okay.Cap[Exec]) A { return body(Db{c}) })
+}
+```
+
+Payments the same way, over HTTP:
 
 ```go
 func Stripe[A any](r *okay.Run, http Http, body func(Payments) A) A {
@@ -118,10 +137,10 @@ func Stripe[A any](r *okay.Run, http Http, body func(Payments) A) A {
 ```
 
 **The system is assembled once**, as a value; production and test differ in
-one line (`Gateway` + `Stripe` versus `Card`):
+their leaves (`Sql` versus `Table`, `Gateway` + `Stripe` versus `Card`):
 
 ```go
-app := shop.Production(items, &calls, &sent)
+app := shop.Production(db, &calls, &sent) // db: a *sql.DB
 receipt := app(func(s shop.Shop) shop.Receipt { return s.Checkout("bob", "book", 2000) })
 ```
 

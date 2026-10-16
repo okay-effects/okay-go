@@ -52,11 +52,12 @@ func (s Shop) Checkout(user, item string, cents int64) Receipt {
 	return r
 }
 
-app := shop.Production(items, &calls, &sent)                      // the system, assembled once
+app := shop.Production(db, &calls, &sent)                         // the system, assembled once
 receipt := app(func(s Shop) Receipt { return s.Checkout("bob", "book", 2000) })
 ```
 
-`examples/shop`: the services, their handlers (`Stock`, `Card`, `Gateway`,
+`examples/shop`: the services, their handlers (`Stock` over a `Db` effect —
+`Sql` on `database/sql`, `Table` in memory — `Card`, `Gateway`,
 `Stripe` — payments over HTTP — `Mailbox`), a test and a production assembly.
 
 ## Parallel branches and async (`par.go`)
