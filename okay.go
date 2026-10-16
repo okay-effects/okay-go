@@ -12,6 +12,7 @@ package okay
 import (
 	"fmt"
 	"iter"
+	"reflect"
 	"sync/atomic"
 )
 
@@ -19,6 +20,9 @@ import (
 type Answers[R any] struct{}
 
 func (Answers[R]) answers(R) {}
+
+// AnswerType: the type of R, for a host that decodes answers it got from elsewhere (package wire).
+func (Answers[R]) AnswerType() reflect.Type { return reflect.TypeFor[R]() }
 
 // Op[R] is an operation answering R.
 type Op[R any] interface{ answers(R) }
@@ -98,6 +102,9 @@ func perform(r *Run, t tagged) any {
 	if !f.yield(struct{}{}) {
 		panic(stopped{})
 	}
+	if e, ok := f.ans.(raised); ok {
+		panic(e.err)
+	}
 	return f.ans
 }
 
@@ -134,7 +141,14 @@ func Handle[O any, A any](r *Run, answer func(O) any, body func(Cap[O]) A) A {
 		t := me.op
 		switch {
 		case t.owner == me:
-			me.ans = answer(t.op.(O))
+			a := answer(t.op.(O))
+			if ab, ok := a.(aborted); ok {
+				me.done = true
+				stop()
+				r.active = outer
+				return ab.v.(A)
+			}
+			me.ans = a
 		case t.owner.done:
 			panic(fmt.Sprintf("okay: %T via a capability used outside its handler — the capability escaped its scope", t.op))
 		case outer == nil && r.remote == nil:

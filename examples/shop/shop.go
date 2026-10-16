@@ -23,8 +23,8 @@ type Email struct {
 	To, Text string
 }
 type Receipt struct {
-	Paid   bool
-	Detail string
+	Paid   bool   `json:"paid"`
+	Detail string `json:"detail"`
 }
 
 type Inventory struct{ cap okay.Cap[Reserve] }
@@ -154,4 +154,10 @@ func Test(items map[string]int, approve bool, sent *[]string) App {
 			})
 		})
 	}
+}
+
+// ---- the shop handed out: its capabilities answered by whoever steps it (okay.Start, package wire)
+
+func Remote(h okay.Host) Shop {
+	return Shop{Inventory{okay.Outside[Reserve](h)}, Payments{okay.Outside[Charge](h)}, Notify{okay.Outside[Email](h)}}
 }
