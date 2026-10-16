@@ -93,7 +93,11 @@ func handle(me *scope, ret func(any) node, clause func(any, func(any) node) node
 				p = n.f(m.v)
 			case performN:
 				f := n.f
-				return on(me, ret, clause, m, func(x any) node { return handle(me, ret, clause, f(x)) })
+				// k answers data, not a call: the rest is handled when the run gets to it, so
+				// a million operations under one handler are a loop, not a recursion
+				return on(me, ret, clause, m, func(x any) node {
+					return bindN{pureN{x}, func(x any) node { return handle(me, ret, clause, f(x)) }}
+				})
 			case bindN:
 				g, f := m.f, n.f
 				p = bindN{m.m, func(x any) node { return bindN{g(x), f} }}

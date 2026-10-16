@@ -12,6 +12,7 @@ package okay
 import (
 	"fmt"
 	"iter"
+	"sync/atomic"
 )
 
 // Answers[R] marks an operation answering R: embed it in the operation's struct.
@@ -23,8 +24,25 @@ func (Answers[R]) answers(R) {}
 type Op[R any] interface{ answers(R) }
 
 // Run is one program's runtime: the chain of its live handlers, innermost first.
-// One Run belongs to one goroutine.
-type Run struct{ active *frame }
+// One Run belongs to one goroutine; a parallel branch has its own, its operations
+// that no handler of its own owns going to the parent over a channel.
+type Run struct {
+	branching atomic.Int32 // > 0 while its branches run: its capabilities must be lent to them
+	active    *frame
+	remote    chan request  // a branch's: where its outer operations go
+	done      chan struct{} // closed when the branch is cancelled
+}
+
+type request struct {
+	t     tagged
+	reply chan reply
+}
+
+type reply struct {
+	ans    any
+	failed any // a panic of the parent's handler, raised in the branch
+	cancel bool
+}
 
 // frame is a handler's coroutine: what its body performed, and where it answers.
 type frame struct {
@@ -51,7 +69,15 @@ func (c Cap[O]) String() string { return fmt.Sprintf("Cap(%s)@%p", c.name, c.own
 
 // Perform: the operation through its capability, answered by the handler that made it.
 func Perform[O Op[R], R any](c Cap[O], op O) R {
+	if c.run.branching.Load() > 0 {
+		panic(fmt.Sprintf("okay: %T through %v while its branches run: inside a branch, use Lend(branch, capability)", op, c))
+	}
 	return perform(c.run, tagged{c.owner, op}).(R)
+}
+
+// Lend: a capability of the parent, for use inside a branch — its operations go to the parent's handler.
+func Lend[O any](branch *Run, c Cap[O]) Cap[O] {
+	return Cap[O]{run: branch, owner: c.owner, name: c.name}
 }
 
 // stopped: the coroutine is being stopped (a consumer broke out); unwinding runs the program's defers
@@ -59,6 +85,9 @@ type stopped struct{}
 
 func perform(r *Run, t tagged) any {
 	f := r.active
+	if f == nil && r.remote != nil {
+		return remote(r, t)
+	}
 	if f == nil {
 		if t.owner != nil && t.owner.done {
 			panic(fmt.Sprintf("okay: %T via a capability used outside its handler — the capability escaped its scope", t.op))
@@ -108,9 +137,9 @@ func Handle[O any, A any](r *Run, answer func(O) any, body func(Cap[O]) A) A {
 			me.ans = answer(t.op.(O))
 		case t.owner.done:
 			panic(fmt.Sprintf("okay: %T via a capability used outside its handler — the capability escaped its scope", t.op))
-		case outer == nil:
+		case outer == nil && r.remote == nil:
 			panic(fmt.Sprintf("okay: %T: no live handler owns its capability", t.op))
-		default: // not mine: pass it outward, unchanged
+		default: // not mine: pass it outward, unchanged — to the parent, from a branch
 			me.ans = perform(r, t)
 		}
 	}
