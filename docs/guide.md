@@ -13,7 +13,8 @@ stepped over a wire by okay's Scala host. Every snippet is from a test or an
 5. [Multi-shot: programs as data](#5-multi-shot-programs-as-data)
 6. [The kernel's protocol: a program stepped by a host](#6-the-kernels-protocol)
 7. [Over the wire, with okay](#7-over-the-wire-with-okay)
-8. [Rules and refusals](#8-rules-and-refusals)
+8. [Middleware: monitor, log, authorize, record, replay](#8-middleware)
+9. [Rules and refusals](#9-rules-and-refusals)
 
 ## 1. Operations, capabilities, handlers
 
@@ -331,7 +332,47 @@ answers okay's operation, a `Charge` record in, a `Receipt` record out. The
 whole test, run against okay's JVM host, is
 `examples/okayhost/TestOkayGoWire.scala`.
 
-## 8. Rules and refusals
+## 8. Middleware
+
+A handed-out program performs its operations as data, so they can all be
+answered in one place — `okay.Drive(run, answer)` with an `okay.Answerer`,
+`func(op any) (any, error)` — and wrapped in middleware: all of them alike, or
+one kind its own way.
+
+```go
+rs := okay.Routes{} // answers by the operation's type
+okay.Route(rs, func(op Reserve) (bool, error) { ... })
+okay.Route(rs, func(op Charge) (Receipt, error) { ... })
+okay.Route(rs, func(op Email) (struct{}, error) { ... })
+
+answer := okay.With(rs.Answer,
+	auditing, metrics, okay.Record(&log), // every operation alike
+	okay.Only(func(op Charge, next okay.Answerer) (any, error) { // Charge alone
+		if !allowed[op.User] || op.Cents > 5000 {
+			return nil, errors.New("forbidden: charge " + op.User)
+		}
+		return next(op)
+	}))
+
+receipt, err := okay.Drive(okay.Start(func(r *okay.Run, h okay.Host) Receipt {
+	return Remote(h).Checkout("bob", "book", 2000)
+}), answer)
+```
+
+- `okay.Middleware` is `func(op any, next okay.Answerer) (any, error)`;
+  `okay.With` wraps an answerer, the first middleware outermost.
+- `okay.Only[O]`: a middleware for operations of type `O`; the others pass by.
+- An error is raised in the program **where the operation was performed**: a
+  refused `Charge` stops `Checkout` there, no mail goes out.
+- `okay.Record(&log)` appends every `Entry{Op, Answer, Err}`;
+  `okay.Replay(log)` answers a run again from it, reaching no service, and
+  refuses the first operation that differs from the recording.
+- The same middleware goes around `wire.Remote(call)`: operations answered by
+  Scala handlers in okay are audited and authorized the same way.
+
+The whole example: `examples/shop/middleware_test.go`.
+
+## 9. Rules and refusals
 
 - **One `Run`, one goroutine.** Branches get their own `Run` from `All`/`Par`/`Race`.
 - **A capability that escaped its handler** (kept after the handler returned)

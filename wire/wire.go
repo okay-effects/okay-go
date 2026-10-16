@@ -61,28 +61,25 @@ func Decode(op any, answer any) (any, error) {
 	return into(a.AnswerType(), answer)
 }
 
+// Remote: every operation answered over the wire — sent through call as its
+// name and record, its plain answer decoded into what the operation answers.
+// Middleware goes around it as around any okay.Answerer.
+func Remote(call Caller) okay.Answerer {
+	return func(op any) (any, error) {
+		name, args := Encode(op)
+		answer, err := call(name, args)
+		if err != nil {
+			return nil, err
+		}
+		return Decode(op, answer)
+	}
+}
+
 // Drive: a handed-out program run to its value, every operation it performs
 // for the host sent through call. A failure the other side raised is raised
 // where the operation was performed; a failure of the program is the error.
 func Drive[A any](c *okay.Computation[A], call Caller) (A, error) {
-	s := c.Step()
-	for s.Kind == okay.Yielded {
-		name, args := Encode(s.Op)
-		answer, err := call(name, args)
-		if err == nil {
-			var v any
-			if v, err = Decode(s.Op, answer); err == nil {
-				s = c.Resume(v)
-				continue
-			}
-		}
-		s = c.Fail(err)
-	}
-	if s.Kind == okay.Failed {
-		var zero A
-		return zero, fmt.Errorf("okay-go: %v", s.Failure)
-	}
-	return s.Value, nil
+	return okay.Drive(c, Remote(call))
 }
 
 // Serve: the other way — a Go answer to O, callable from the wire by name with
