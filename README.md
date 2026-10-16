@@ -23,6 +23,13 @@ are its capabilities — parameters and fields, as a Go program passes `ctx`.
 Continuations are one-shot (a coroutine cannot be copied); multi-shot is in
 package `prog`, programs as data.
 
+**Documentation:** [the guide](docs/guide.md) and the package docs
+(`go doc github.com/sergey-scherbina/okay-go`, runnable `Example`s).
+
+```
+go get github.com/sergey-scherbina/okay-go
+```
+
 ## The shop
 
 ```go
@@ -103,3 +110,7 @@ handlers in okay, and a Go handler answers okay's operations:
 An experiment: the core, parallel branches, programs as data, the kernel's
 protocol and the wire, with tests (`go test -race ./...`). One `Run` belongs
 to one goroutine; branches borrow capabilities explicitly.
+
+## License
+
+Apache 2.0, as okay.
