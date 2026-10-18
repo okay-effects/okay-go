@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	okay "github.com/sergey-scherbina/okay-go"
+	okay "github.com/okay-effects/okay-go"
 )
 
 // An operation: a struct embedding Answers[R], R being what it answers.

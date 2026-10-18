@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	okay "github.com/sergey-scherbina/okay-go"
-	"github.com/sergey-scherbina/okay-go/examples/shop"
+	okay "github.com/okay-effects/okay-go"
+	"github.com/okay-effects/okay-go/examples/shop"
 )
 
 // the other side as a table of named functions, answering plain values — as a foreign host does

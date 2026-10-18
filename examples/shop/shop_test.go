@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	okay "github.com/sergey-scherbina/okay-go"
+	okay "github.com/okay-effects/okay-go"
 )
 
 // a database for the production assembly: a database/sql driver keeping the

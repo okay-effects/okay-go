@@ -24,9 +24,9 @@ object TestOkayGoWire:
 import (
 	"fmt"
 
-	okaygo "github.com/sergey-scherbina/okay-go"
-	"github.com/sergey-scherbina/okay-go/examples/shop"
-	"github.com/sergey-scherbina/okay-go/wire"
+	okaygo "github.com/okay-effects/okay-go"
+	"github.com/okay-effects/okay-go/examples/shop"
+	"github.com/okay-effects/okay-go/wire"
 	"worker/okay"
 )
 
@@ -93,7 +93,7 @@ class TestOkayGoWire extends munit.FunSuite {
   private lazy val w =
     val dir = Files.createTempDirectory("okay-go-wire")
     Files.writeString(dir.resolve("go.mod"),
-      s"module worker\n\ngo 1.27\n\nrequire github.com/sergey-scherbina/okay-go v0.0.0\n\nreplace github.com/sergey-scherbina/okay-go => $okayGo\n"): Unit
+      s"module worker\n\ngo 1.27\n\nrequire github.com/okay-effects/okay-go v0.0.0\n\nreplace github.com/okay-effects/okay-go => $okayGo\n"): Unit
     Files.writeString(dir.resolve("main.go"), main): Unit
     ForeignWorker.speaking(Seq(GoWorker.build(dir).toString))
   private given okay.Answers[ForeignEval] = w.handler

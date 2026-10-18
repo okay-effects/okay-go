@@ -3,7 +3,7 @@ package shop
 import (
 	"testing"
 
-	okay "github.com/sergey-scherbina/okay-go"
+	okay "github.com/okay-effects/okay-go"
 )
 
 // what an interface cannot do, 1: the handler ends the whole Checkout, not the call

@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	okay "github.com/sergey-scherbina/okay-go"
+	okay "github.com/okay-effects/okay-go"
 )
 
 // the shop's services answered in one place, every operation passing the same middleware

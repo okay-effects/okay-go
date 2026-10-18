@@ -1,7 +1,7 @@
 # okay-go
 
 Algebraic effects for Go, in direct style, with capabilities: the design of
-[okay](https://github.com/sergey-scherbina/okay)'s okay-java `Cap`, on Go's own coroutines.
+[okay](https://github.com/okay-effects/okay)'s okay-java `Cap`, on Go's own coroutines.
 
 - **A handler makes a capability and hands it to its body.** The body performs
   operations through it as ordinary calls; ordinary Go code — loops, `if`, `defer`.
@@ -24,10 +24,10 @@ Continuations are one-shot (a coroutine cannot be copied); multi-shot is in
 package `prog`, programs as data.
 
 **Documentation:** [the guide](docs/guide.md) and the package docs
-(`go doc github.com/sergey-scherbina/okay-go`, runnable `Example`s).
+(`go doc github.com/okay-effects/okay-go`, runnable `Example`s).
 
 ```
-go get github.com/sergey-scherbina/okay-go
+go get github.com/okay-effects/okay-go
 ```
 
 ## The shop

@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	okay "github.com/sergey-scherbina/okay-go"
+	okay "github.com/okay-effects/okay-go"
 )
 
 // ---- the services: operations, and their typed faces over a capability

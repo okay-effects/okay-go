@@ -1,3 +1,3 @@
-module github.com/sergey-scherbina/okay-go
+module github.com/okay-effects/okay-go
 
 go 1.27

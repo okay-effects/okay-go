@@ -3,9 +3,9 @@ package wire_test
 import (
 	"fmt"
 
-	okay "github.com/sergey-scherbina/okay-go"
-	"github.com/sergey-scherbina/okay-go/examples/shop"
-	"github.com/sergey-scherbina/okay-go/wire"
+	okay "github.com/okay-effects/okay-go"
+	"github.com/okay-effects/okay-go/examples/shop"
+	"github.com/okay-effects/okay-go/wire"
 )
 
 // The shop stepped over a wire: the far side sees a name and a record, answers plain values.

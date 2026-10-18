@@ -13,7 +13,7 @@ import (
 	"strings"
 	"unicode"
 
-	okay "github.com/sergey-scherbina/okay-go"
+	okay "github.com/okay-effects/okay-go"
 )
 
 // Caller: one request over the wire, its answer, or the failure the other side raised.
